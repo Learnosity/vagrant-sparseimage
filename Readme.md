@@ -18,8 +18,6 @@ If you installed vagrant using RubyGems, use:
 $ gem install vagrant-sparseimage
 ```
 
-Compatibly for vagrant 0.8 is provided by version 0.0.3 (which lacks a bunch of new options)
-
 ## Configuration / Usage
 
 To enable the plugin you need to add the following to you `Vagrantfile`:
