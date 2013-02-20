@@ -2,6 +2,22 @@
 
 *vagrant-sparseimage* is a [Vagrant](http://vagrantup.com) plugin which automatically creates and mounts a sparseimage for the guest system to share. This allows alternative filesystems to be used between the host and the guest (eg. journaled, case sensitive). The image is browasable from Finder and completely configurable. The image can be auto-unmounted when the guest is halted or left mounted for manual control. The image is also destroyed if you choose when the guest is destroyed.
 
+## Building
+
+To build the gem:
+
+If you installed vagrant that way, you need to use vagrant's gem wrapper:
+
+```bash
+$ vagrant gem build vagrant-sparseimage.gemspec
+```
+
+If you installed vagrant using RubyGems, use:
+
+```bash
+$ gem build vagrant-sparseimage.gemspec
+```
+
 ## Installation
 
 Requires vagrant 0.9.4 or later (including 1.0)
