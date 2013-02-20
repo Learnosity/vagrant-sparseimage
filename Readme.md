@@ -20,7 +20,7 @@ $ gem install vagrant-sparseimage
 
 ## Configuration / Usage
 
-To enable the plugin you need to add the following to you `Vagrantfile`:
+To enable the plugin you need to add the following to your `Vagrantfile`:
 
 ```ruby
 Vagrant::Config.run do |config|
