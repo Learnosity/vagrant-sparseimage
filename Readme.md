@@ -40,28 +40,34 @@ To enable the plugin you need to add the following to your `Vagrantfile`:
 
 ```ruby
 Vagrant::Config.run do |config|
-	# set to true to enable plugin
-	config.sparseimage.enabled = true
+    # set to true to enable plugin
+    config.sparseimage.enabled = true
 
-	# to set the image volume name; the default is the name of the directory containing the
-	# Vagrantfile
-	#config.sparseimage.volume_name = "Vagrant Image"
+    # to set the image volume name; the default is the name of the directory containing the
+    # Vagrantfile
+    #config.sparseimage.volume_name = "Vagrant Image"
 
-	# to set the guest mount point for the image; the default is the name of the directory containing
-	# the Vagrantfile (eg. /vagrant_dir)
-	#config.sparseimage.vm_mountpoint = "/www"
+    # to set the guest mount point for the image; the default is the name of the directory containing
+    # the Vagrantfile (eg. /vagrant_dir)
+    #config.sparseimage.vm_mountpoint = "/www"
 
-	# to set the image filename; the default is .<vm name>.sparseimage
-	#config.sparseimage.image_filename = ".amazingimagefile"
+    # to set the image filename; the default is .<vm name>.sparseimage
+    #config.sparseimage.image_filename = ".amazingimagefile"
 
-	# to set the image maximum size in gigabytes; the first time "vagrant up" the system you will be prompted
-	#config.sparseimage.image_size = 5
+    # to set the image maximum size in gigabytes; the first time "vagrant up" the system you will be prompted
+    #config.sparseimage.image_size = 5
 
-	# to set the image file system; the default is JHFS+X
-	#config.sparseimage.image_fs = "HFS+"
+    # to set the image file system; the default is JHFS+X
+    #config.sparseimage.image_fs = "HFS+"
 
-	# to disabled auto-unmount; to stop "vagrant halt" unmounting the image
-	#config.sparseimage.auto_unmount = false
+    # to set the image type between SPARSE and SPARSEBUNDLE; the default is SPARSE
+    #config.sparseimage.image_type = true
+
+    # to disabled auto-unmount; to stop "vagrant halt" unmounting the image
+    #config.sparseimage.auto_unmount = false
+
+    # to set NFS share options; default is true
+    #config.sparseimage.nfs_options = ["ac","acregmin=1"]
 end
 ```
 
