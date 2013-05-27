@@ -89,7 +89,7 @@ module SparseImage
 					vm.ui.info "Found sparse disk image: #{full_image_filename}"
 				else
 					# Create the directory if it does not exist
-					FileUtil.mkdir_p opts.image_folder if not File.exists? opts.image_folder
+					FileUtils.mkdir_p opts.image_folder if not File.exists? opts.image_folder
 
 					# hdiutil is finnicky with image type
 					type = opts.image_type == 'SPARSEIMAGE' ? 'SPARSE' : opts.image_type
