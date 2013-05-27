@@ -6,22 +6,16 @@ The image can be browser from OSX Finder and is completely configurable. It can 
 
 ## Dependencies
 
-Only runs in OSX. Requires vagrant 0.9.4 or later (including 1.0). Does not currently support Vagrant 1.1+ - the plugin API changed.
+Only runs in OSX. Requires Vagrant v1.2+.
 
 ## Installation
 
-Since Vagrant v1.0.0, the preferred installation method is using prebuilt packages or installers.
+See **building** below for building the gem.
 
-If you installed vagrant that way, you need to use vagrant's gem wrapper:
-
-```bash
-$ vagrant gem install vagrant-sparseimage
-```
-
-If you installed vagrant using RubyGems, use:
+Use `vagrant plugin` to install the gem in your Vagrant environment:
 
 ```bash
-$ gem install vagrant-sparseimage
+$ vagrant plugin install vagrant-sparseimage.gem
 ```
 
 ## Configuration
@@ -32,7 +26,7 @@ The following config properties for `config.sparseimage` are compulsory:
 
 * **volume_name**: the name that will be used to mount the volume and derive its filename
 * **image_type**: `SPARSEIMAGE` or `SPARSEBUNDLE`
-* **image_fs**: `JHFS+` or ??
+* **image_fs**: filesystem type: see below for list of supported formats
 * **vm_mountpoint**: where to mount the image wihtin the guest
 * **image_size**: size in MB. both image types will consume space lazily
 * **image_folder**: the folder on the host to store the image file in
@@ -40,6 +34,15 @@ The following config properties for `config.sparseimage` are compulsory:
 The following properties are optional:
 
 * **auto_unmount**: whether to unmount the image from the host when the guest is stopped. Defaults to true.
+
+## Filesystems
+
+* HFS+
+* HFS+J (`JHFS+` in the config)
+* HFSX
+* JHFS+X
+* MS-DOS
+* UDF
 
 ## Building
 
