@@ -69,6 +69,9 @@ module SparseImage
 	end
 
 	class Mount
+		# Mount sparse images on the host machine and add them to the config for the guest
+		# Create the sparse image files if necessary.
+
 		def initialize(app, env)
 			@app = app
 			@env = env
@@ -181,7 +184,6 @@ module SparseImage
 			@@images.push(image)
 		end
 
-
 		def finalise!
 			@@images.each do |image|
 				image.finalise!
@@ -190,7 +192,6 @@ module SparseImage
 
 		def validate(machine)
 			errors = {}
-
 			# Validate each of the image configs in turn
 			@@images.each_with_index do |image, i|
 				image_errors = image.validate(machine)
@@ -198,39 +199,28 @@ module SparseImage
 					errors[i] = image_errors
 				end
 			end
-
 			errors
 		end
 
 		def to_hash
-			# TODO - can it be done without this?
 			return { :images => @@images }
 		end
 	end
 
 	class Plugin < Vagrant.plugin("2")
-		# The actual vagrant plugin
-		# This is here for two reasons:
-		#	* to yield a Config object to the Vagrantfile
-		#	* to 
 		name "vagrant sparse image support"
 		description "A vagrant plugin to create a mount sparse images into the guest VM"
 
 		config(:sparseimage) do
 			# Yield a config object to the vagrant file.
-			# Vagrant should handle persisting the state of this object.
-			#Config
+			# Vagrant will handle persisting the state of this object for each VM.
 			Config
 		end
 
 		action_hook(self::ALL_ACTIONS) do |hook|
-			#hook.after(VagrantPlugins::ProviderVirtualBox::Action::Boot, Mount)
 			hook.after(VagrantPlugins::ProviderVirtualBox::Action::ForwardPorts, Mount)
 			hook.after(Vagrant::Action::Builtin::GracefulHalt, Unmount)
 			hook.after(Vagrant::Action::Builtin::DestroyConfirm, Destroy)
-
-			#hook.after(VagrantPlugins::ProviderVirtualBox::Action::ForcedHalt, Unmount)
-			# TODO - confirm that Destroy is not called when confirm is declined
 		end
 	end
 end
