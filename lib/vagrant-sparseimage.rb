@@ -30,26 +30,26 @@ module SparseImage
 
 		@@valid_image_types = ["SPARSEIMAGE", "SPARSEBUNDLE"]
 
-		def validate(machine)
-			errors = {}
+		def validate
+			errors = []
 			# Check for the required config keys
 			@@required.each do |key|
 				if not to_hash[key] or (to_hash[key].is_a? String  and to_hash[key].length == 0)
-					errors[key] = ["Must be present."]
+					puts to_hash
+					errors.push "#{key} must be present."
 				end
 			end
 
 			# Validate image type
 			if not @@valid_image_types.include?(@image_type)
-				errors[key] = ["Invalid value: only supports #{@@valid_image_types.join(',')}"]
+				errors.push "image_type: invalid value: only supports #{@@valid_image_types.join(',')}"
 			end
 
 			# Size must be an int
 			if @image_size and not @image_size.is_a? Fixnum
-				errors[key] = ["Must be a number."]
+				errors.push "image_size: Must be a number."
 			end
-			{}
-			#errors
+			{ "vagrant-sparseimage" => errors }
 		end
 
 		def finalize!
@@ -194,9 +194,12 @@ module SparseImage
 			errors = {}
 			# Validate each of the image configs in turn
 			@@images.each_with_index do |image, i|
-				image_errors = image.validate(machine)
+				image_errors = image.validate()
 				if image_errors.length > 0
-					errors[i] = image_errors
+					image_errors.each do |key, value|
+						errors[key] ||= []
+						errors[key] += value
+					end
 				end
 			end
 			errors
