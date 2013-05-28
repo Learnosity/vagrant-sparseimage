@@ -82,8 +82,8 @@ module SparseImage
 			vm = env[:machine]
 			vm.config.sparseimage.to_hash[:images].each do |opts|
 				# Derive the full image filename and volume mount path (for the host)
-				full_image_filename = "#{opts.image_folder}/#{opts.volume_name}.#{opts.image_type}"
-				full_volume_path = "#{opts.image_folder}/#{opts.volume_name}"
+				full_image_filename = "#{opts.image_folder}/#{opts.volume_name}.#{opts.image_type}".downcase
+				full_volume_path = "#{opts.image_folder}/#{opts.volume_name}".downcase
 
 				# Does the image need to be created?
 				if File.exists? full_image_filename
@@ -129,7 +129,7 @@ module SparseImage
 			vm = env[:machine]
 			vm.config.sparseimage.to_hash[:images].each do |options|
 				if options.auto_unmount
-					full_volume_path = "#{options.image_folder}/#{options.volume_name}"
+					full_volume_path = "#{options.image_folder}/#{options.volume_name}".downcase
 					vm.ui.info("Unmounting disk image from host: #{full_volume_path}")
 					system("hdiutil detach -quiet '#{full_volume_path}'")
 				end
@@ -150,8 +150,8 @@ module SparseImage
 			vm = env[:machine]
 			vm.config.sparseimage.to_hash[:images].each do |options|
 
-				full_image_filename = "#{options.image_folder}/#{options.volume_name}.#{options.image_type}"
-				full_volume_path = "#{options.image_folder}/#{options.volume_name}"
+				full_image_filename = "#{options.image_folder}/#{options.volume_name}.#{options.image_type}".downcase
+				full_volume_path = "#{options.image_folder}/#{options.volume_name}".downcase
 
 				# First unmount the volume
 				vm.ui.info("Unmounting disk image from host: #{full_volume_path}")
@@ -161,7 +161,13 @@ module SparseImage
 				choice = vm.ui.ask("Do you want to delete the sparse image at #{full_image_filename}? [Y/N] ")
 				if choice.upcase == 'Y'
 					vm.ui.info("Destroying disk image at #{full_image_filename}")
-					File.delete(full_image_filename)
+					if File.exists?(full_image_filename)
+						if File.directory?(full_image_filename)
+							FileUtils.rm_rf(full_image_filename)
+						else
+							File.delete(full_image_filename)
+						end
+					end
 				end
 			end
 
