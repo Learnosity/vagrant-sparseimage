@@ -59,12 +59,13 @@ module SparseImage
 		end
 
 		def to_hash
-			{	:vm_mountpoint   => @vm_mountpoint,
-				:image_filename  => @image_filename,
-				:image_size      => @image_size,
-				:image_fs        => @image_fs,
-				:image_type      => @image_type,
-				:image_folder	 => @image_folder }
+			{	:vm_mountpoint  => @vm_mountpoint,
+				:image_size     => @image_size,
+				:image_fs       => @image_fs,
+				:image_type     => @image_type,
+				:volume_name	=> @volume_name,
+				:auto_unmount	=> @auto_unmount,
+				:image_folder	=> @image_folder }
 		end
 	end
 
