@@ -12,7 +12,7 @@ rescue LoadError
 end
 
 module SparseImage
-	VERSION = "0.1.2"
+	VERSION = "0.2.0"
 
 	class ImageConfig
 		# Configuration for a single sparse image
