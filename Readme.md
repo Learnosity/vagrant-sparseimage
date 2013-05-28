@@ -54,8 +54,3 @@ $ gem build vagrant-sparseimage.gemspec
 ```
 
 If you installed Vagrant with a prebuilt package or installer, you need to use Vagrant's gem wrapper:
-
-```bash
-$ bundle install
-$ vagrant gem build vagrant-sparseimage.gemspec
-```

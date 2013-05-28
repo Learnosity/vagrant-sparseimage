@@ -13,7 +13,6 @@ Gem::Specification.new do |s|
 	s.description	= %q{A vagrant plugin to create a mount sparse images into the guest VM.}
 
 	s.required_rubygems_version = '>= 1.3.6'
-	# TODO - is bundler needed?
 	s.add_development_dependency 'rake'
 	s.add_development_dependency 'bundler', '>= 1.2.0'
 	s.add_development_dependency 'vagrant', '>= 1.2'
