@@ -12,7 +12,7 @@ rescue LoadError
 end
 
 module SparseImage
-	VERSION = "0.2.0"
+	VERSION = "0.2.1"
 
 	class ImageConfig
 		# Configuration for a single sparse image
@@ -193,7 +193,7 @@ module SparseImage
 
 		def finalize!
 			@@images.each do |image|
-				image.finalise!
+				image.finalize!
 			end
 		end
 
