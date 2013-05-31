@@ -191,7 +191,7 @@ module SparseImage
 			@@images.push(image)
 		end
 
-		def finalise!
+		def finalize!
 			@@images.each do |image|
 				image.finalise!
 			end
