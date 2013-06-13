@@ -89,6 +89,7 @@ module SparseImage
 				# Derive the full image filename and volume mount path (for the host)
 				full_image_filename = "#{opts.image_folder}/#{opts.volume_name}.#{opts.image_type}".downcase
 				full_volume_path = "#{opts.image_folder}/#{opts.volume_name}".downcase
+				mounted_name = "#{opts.mounted_folder}/#{opts.volume_name}".downcase
 
 				# Does the image need to be created?
 				if File.exists? full_image_filename
@@ -117,7 +118,7 @@ module SparseImage
 				system("sudo rm -rf #{opts.mounted_folder}/.fseventsd")
 
 				env[:machine].config.vm.synced_folders[opts.volume_name] = {
-					:hostpath => opts.mounted_folder,
+					:hostpath => mounted_name,
 					:guestpath => opts.vm_mountpoint,
 					:nfs => true
 				}
