@@ -12,13 +12,13 @@ rescue LoadError
 end
 
 module SparseImage
-	VERSION = "0.2.1"
+	VERSION = "0.2.2"
 
 	class ImageConfig
 		# Configuration for a single sparse image
 		# Not exposed to vagrant.
 
-		attr_accessor :vm_mountpoint, :image_size, :image_fs, :image_type, :volume_name, :image_folder, :auto_unmount
+		attr_accessor :vm_mountpoint, :image_size, :image_fs, :image_type, :volume_name, :image_folder, :auto_unmount, :mounted_folder
 		
 		@@required = [
 			:volume_name,
@@ -26,7 +26,7 @@ module SparseImage
 			:image_fs,
 			:vm_mountpoint,
 			:image_size,
-			:image_folder ]
+			:image_folder]
 
 		@@valid_image_types = ["SPARSEIMAGE", "SPARSEBUNDLE"]
 
@@ -56,6 +56,9 @@ module SparseImage
 			if @auto_unmount.nil?
 				@auto_unmount = true
 			end
+			if @mounted_folder.nil?
+				@mounted_folder = @image_folder
+			end
 		end
 
 		def to_hash
@@ -65,7 +68,9 @@ module SparseImage
 				:image_type     => @image_type,
 				:volume_name	=> @volume_name,
 				:auto_unmount	=> @auto_unmount,
-				:image_folder	=> @image_folder }
+				:image_folder	=> @image_folder,
+				:mounted_folder => @mounted_folder
+			}
 		end
 	end
 
@@ -103,11 +108,16 @@ module SparseImage
 				end
 
 				# Mount the image in the host
-				vm.ui.info("Mounting disk image in the host: #{full_image_filename}")
-				system("hdiutil attach -mountroot '#{opts.image_folder}' '#{full_image_filename}'")
+				vm.ui.info("Mounting disk image in the host: #{full_image_filename} at #{opts.mounted_folder}")
+				system("hdiutil attach -mountroot '#{opts.mounted_folder}' '#{full_image_filename}'")
+
+				vm.ui.info("Removing .Trashes and .fseventsd")
+				# Remove nonsense hidden files
+				system("sudo rm -rf #{opts.mounted_folder}/.Trashes")
+				system("sudo rm -rf #{opts.mounted_folder}/.fseventsd")
 
 				env[:machine].config.vm.synced_folders[opts.volume_name] = {
-					:hostpath => full_volume_path,
+					:hostpath => opts.mounted_folder,
 					:guestpath => opts.vm_mountpoint,
 					:nfs => true
 				}
