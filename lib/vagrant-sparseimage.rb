@@ -12,7 +12,59 @@ rescue LoadError
 end
 
 module SparseImage
-	VERSION = "0.2.2"
+	VERSION = "0.2.3"
+
+	class << self
+		# Run the command, wait for exit and return the Process object.
+		def run(cmd)
+			pid = Process.fork { exec(cmd) }
+			Process.waitpid(pid)
+			return $?
+		end
+
+		# Try to mount the image. If it fails, return a warning (as a string)
+		def mount(vm, mount_in, image_path)
+			if not run("sudo hdiutil attach -mountroot '#{mount_in}' '#{image_path}'").success?
+				vm.ui.error("WARNING: Failed to mount #{image_path} at #{mount_in}")
+			end
+		end
+
+		# Unmount the image
+		def unmount(vm, mounted_in)
+			vm.ui.info("Unmounting disk image from host: #{mounted_in}")
+			if not run("sudo hdiutil detach -quiet '#{mounted_in}'").success?
+				vm.ui.error("WARNING: Failed to unmount #{mounted_in}. It may not have been mounted.")
+			end
+		end
+
+		# Delete the image
+		def destroy(vm, image_filename)
+			vm.ui.info("Destroying disk image at #{image_filename}")
+			if File.exists?(image_filename)
+				if File.directory?(image_filename)
+					FileUtils.rm_rf(image_filename)
+				else
+					File.delete(image_filename)
+				end
+			end
+		end
+
+		# Remove all the nonsense that comes with a mounted volume in OSX
+		def remove_OSX_fuzz(vm, mounted_dir)
+			# Append trailing slash if it's missing from the mounted dir
+			mounted_dir = "#{mounted_dir}/" unless mounted_dir[-1] == '/'
+			errors = []
+			['.Trashes', '.fseventsd', '.Spotlight-V*'].each do |rubbish|
+				path = "#{mounted_dir}#{rubbish}"
+				p = run("sudo rm -rf #{path}")
+				vm.ui.info("Removing #{path}")
+				if not p.success?
+					vm.ui.error("Failed to remove #{rubbish} from #{mounted_dir}")
+				end
+			end
+			return errors
+		end
+	end
 
 	class ImageConfig
 		# Configuration for a single sparse image
@@ -88,7 +140,6 @@ module SparseImage
 			vm.config.sparseimage.to_hash[:images].each do |opts|
 				# Derive the full image filename and volume mount path (for the host)
 				full_image_filename = "#{opts.image_folder}/#{opts.volume_name}.#{opts.image_type}".downcase
-				full_volume_path = "#{opts.image_folder}/#{opts.volume_name}".downcase
 				mounted_name = "#{opts.mounted_folder}/#{opts.volume_name}".downcase
 
 				# Does the image need to be created?
@@ -110,17 +161,18 @@ module SparseImage
 
 				# Mount the image in the host
 				vm.ui.info("Mounting disk image in the host: #{full_image_filename} at #{opts.mounted_folder}")
-				system("hdiutil attach -mountroot '#{opts.mounted_folder}' '#{full_image_filename}'")
+				SparseImage::mount(vm, opts.mounted_folder, full_image_filename)
 
-				vm.ui.info("Removing .Trashes and .fseventsd")
 				# Remove nonsense hidden files
-				system("sudo rm -rf #{opts.mounted_folder}/.Trashes")
-				system("sudo rm -rf #{opts.mounted_folder}/.fseventsd")
+				errors = SparseImage::remove_OSX_fuzz(vm, mounted_name)
+				if errors.length > 0
+					errors.each do |error| vm.ui.info(error) end
+				end
 
 				env[:machine].config.vm.synced_folders[opts.volume_name] = {
 					:hostpath => mounted_name,
 					:guestpath => opts.vm_mountpoint,
-					:nfs => true
+					:nfs => true,
 				}
 			end
 
@@ -138,11 +190,10 @@ module SparseImage
 		end
 		def call(env)
 			vm = env[:machine]
-			vm.config.sparseimage.to_hash[:images].each do |options|
-				if options.auto_unmount
-					full_volume_path = "#{options.image_folder}/#{options.volume_name}".downcase
-					vm.ui.info("Unmounting disk image from host: #{full_volume_path}")
-					system("hdiutil detach -quiet '#{full_volume_path}'")
+			vm.config.sparseimage.to_hash[:images].each do |opts|
+				mounted_name = "#{opts.mounted_folder}/#{opts.volume_name}".downcase
+				if opts.auto_unmount
+					SparseImage::unmount(vm, mounted_name)
 				end
 			end
 			@app.call(env)
@@ -159,26 +210,14 @@ module SparseImage
 		end
 		def call(env)
 			vm = env[:machine]
-			vm.config.sparseimage.to_hash[:images].each do |options|
-
-				full_image_filename = "#{options.image_folder}/#{options.volume_name}.#{options.image_type}".downcase
-				full_volume_path = "#{options.image_folder}/#{options.volume_name}".downcase
-
-				# First unmount the volume
-				vm.ui.info("Unmounting disk image from host: #{full_volume_path}")
-				system("hdiutil detach -quiet '#{full_volume_path}'")
+			vm.config.sparseimage.to_hash[:images].each do |opts|
+				full_image_filename = "#{opts.image_folder}/#{opts.volume_name}.#{opts.image_type}".downcase
+				mounted_name = "#{opts.mounted_folder}/#{opts.volume_name}".downcase
 
 				# Confirm destruction of the sparse image
 				choice = vm.ui.ask("Do you want to delete the sparse image at #{full_image_filename}? [Y/N] ")
 				if choice.upcase == 'Y'
-					vm.ui.info("Destroying disk image at #{full_image_filename}")
-					if File.exists?(full_image_filename)
-						if File.directory?(full_image_filename)
-							FileUtils.rm_rf(full_image_filename)
-						else
-							File.delete(full_image_filename)
-						end
-					end
+					SparseImage::destroy(vm, full_image_filename)
 				end
 			end
 
