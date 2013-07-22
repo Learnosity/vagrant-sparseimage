@@ -24,7 +24,7 @@ module SparseImage
 
 		# Try to mount the image. If it fails, return a warning (as a string)
 		def mount(vm, mount_in, image_path)
-			if not run("hdiutil attach -mountroot '#{mount_in}' '#{image_path}'").success?
+			if not run("hdiutil attach -mountpoint '#{mount_in}' '#{image_path}'").success?
 				vm.ui.error("WARNING: Failed to mount #{image_path} at #{mount_in}")
 			end
 		end
