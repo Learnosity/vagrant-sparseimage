@@ -6,13 +6,12 @@ end
 require 'pp'
 
 begin
-	require 'vagrant'
+    require 'vagrant'
 rescue LoadError
-	raise 'The Vagrant SparseImage plugin must be run within Vagrant.'
+    raise 'The Vagrant SparseImage plugin must be run within Vagrant.'
 end
 
 module SparseImage
-	VERSION = "0.2.3"
 
 	class << self
 		# Run the command, wait for exit and return the Process object.
