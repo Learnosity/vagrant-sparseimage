@@ -6,13 +6,12 @@ end
 require 'pp'
 
 begin
-	require 'vagrant'
+    require 'vagrant'
 rescue LoadError
-	raise 'The Vagrant SparseImage plugin must be run within Vagrant.'
+    raise 'The Vagrant SparseImage plugin must be run within Vagrant.'
 end
 
 module SparseImage
-	VERSION = "0.2.3"
 
 	class << self
 		# Run the command, wait for exit and return the Process object.
@@ -24,7 +23,7 @@ module SparseImage
 
 		# Try to mount the image. If it fails, return a warning (as a string)
 		def mount(vm, mount_in, image_path)
-			if not run("sudo hdiutil attach -mountroot '#{mount_in}' '#{image_path}'").success?
+			if not run("hdiutil attach -mountpoint '#{mount_in}' '#{image_path}'").success?
 				vm.ui.error("WARNING: Failed to mount #{image_path} at #{mount_in}")
 			end
 		end
@@ -32,7 +31,7 @@ module SparseImage
 		# Unmount the image
 		def unmount(vm, mounted_in)
 			vm.ui.info("Unmounting disk image from host: #{mounted_in}")
-			if not run("sudo hdiutil detach -quiet '#{mounted_in}'").success?
+			if not run("hdiutil detach -quiet '#{mounted_in}'").success?
 				vm.ui.error("WARNING: Failed to unmount #{mounted_in}. It may not have been mounted.")
 			end
 		end
@@ -56,7 +55,7 @@ module SparseImage
 			errors = []
 			['.Trashes', '.fseventsd', '.Spotlight-V*'].each do |rubbish|
 				path = "#{mounted_dir}#{rubbish}"
-				p = run("sudo rm -rf #{path}")
+				p = run("rm -rf #{path}")
 				vm.ui.info("Removing #{path}")
 				if not p.success?
 					vm.ui.error("Failed to remove #{rubbish} from #{mounted_dir}")
@@ -160,8 +159,8 @@ module SparseImage
 				end
 
 				# Mount the image in the host
-				vm.ui.info("Mounting disk image in the host: #{full_image_filename} at #{opts.mounted_folder}")
-				SparseImage::mount(vm, opts.mounted_folder, full_image_filename)
+				vm.ui.info("Mounting disk image in the host: #{full_image_filename} at #{opts.mounted_name}")
+				SparseImage::mount(vm, opts.mounted_name, full_image_filename)
 
 				# Remove nonsense hidden files
 				errors = SparseImage::remove_OSX_fuzz(vm, mounted_name)
