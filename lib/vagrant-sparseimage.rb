@@ -1,7 +1,11 @@
 begin
 	FileUtils
 rescue NameError
-	require 'FileUtils'
+	begin
+		require 'FileUtils'
+	rescue LoadError
+		require 'fileutils'
+	end
 end
 require 'pp'
 
