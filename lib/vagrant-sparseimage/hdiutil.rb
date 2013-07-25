@@ -44,12 +44,14 @@ module SparseImage
 				# Append trailing slash if it's missing from the mounted dir
 				mounted_dir = "#{mounted_dir}/" unless mounted_dir[-1] == '/'
 				errors = []
-				['.Trashes', '.fseventsd', '.Spotlight-V*'].each do |rubbish|
+				['.fseventsd', '.Spotlight-V*', '.Trashes'].each do |rubbish|
 					path = "#{mounted_dir}#{rubbish}"
-					p = SparseImage::run("rm -rf #{path}")
-					vm.ui.info("Removing #{path}")
-					if not p.success?
-						vm.ui.error("Failed to remove #{rubbish} from #{mounted_dir}")
+					if File.exists?(path)
+						p = SparseImage::run("rm -rf #{path}")
+						vm.ui.info("Removing #{path}")
+						if not p.success?
+							vm.ui.error("Failed to remove #{rubbish} from #{mounted_dir}. It may not have existed.")
+						end
 					end
 				end
 				return errors

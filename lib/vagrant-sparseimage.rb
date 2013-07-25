@@ -98,8 +98,8 @@ module SparseImage
 					if choice.upcase == 'Y'
 						choice = vm.ui.ask("Confirm the name of the volume to destroy [#{ opts.volume_name}] ")
 						if choice == opts.volume_name
-							# TODO - Test first whether it's mounted before tryingto unmount
-							SparseImage::HDIUTIL::unmount(vm, opts.mounted_name)
+							# TODO - Test first whether it's mounted before trying to unmount
+							#SparseImage::HDIUTIL::unmount(vm, opts.mounted_name)
 							SparseImage::HDIUTIL::destroy(vm, full_image_filename)
 							cancel = true
 						else
@@ -231,7 +231,7 @@ module SparseImage
 		end
 		def call(env)
 			vm = env[:machine]
-			destroy(vm)
+			SparseImage::destroy(vm)
 			@app.call(env)
 		end
 	end
