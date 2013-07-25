@@ -34,7 +34,7 @@ The following config properties for `config.sparseimage` are compulsory:
 The following properties are optional:
 
 * **auto_unmount**: whether to unmount the image from the host when the guest is stopped. Defaults to true.
-* **mounted_folder**: the folder to mount the sparse bundles in. Defaults to being the same as the image_folder.
+* **mounted_name**: the full path to mount the sparse bundles in. Defaults using the name of the volume.
 
 ## Filesystems
 

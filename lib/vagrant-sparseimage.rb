@@ -12,9 +12,9 @@ require 'pp'
 require 'optparse'
 
 begin
-    require 'vagrant'
+	require 'vagrant'
 rescue LoadError
-    raise 'The Vagrant SparseImage plugin must be run within Vagrant.'
+	raise 'The Vagrant SparseImage plugin must be run within Vagrant.'
 end
 require Vagrant.source_root.join("plugins/commands/up/start_mixins")
 
@@ -42,7 +42,6 @@ module SparseImage
 			vm.config.sparseimage.to_hash[:images].each do |opts|
 				# Derive the full image filename and volume mount path (for the host)
 				full_image_filename = "#{opts.image_folder}/#{opts.volume_name}.#{opts.image_type}".downcase
-				mounted_name = "#{opts.mounted_folder}/#{opts.volume_name}".downcase
 
 				# Does the image need to be created?
 				if File.exists? full_image_filename
@@ -61,17 +60,17 @@ module SparseImage
 				end
 
 				# Mount the image in the host
-				SparseImage::HDIUTIL::mount(vm, opts.mounted_folder, full_image_filename)
-				vm.ui.info("Mounted disk image in the host: #{full_image_filename} at #{opts.mounted_folder}")
+				vm.ui.info("Mounting disk image in the host: #{full_image_filename} at #{opts.mounted_name}")
+				SparseImage::HDIUTIL::mount(vm, opts.mounted_name, full_image_filename)
 
 				# Remove nonsense hidden files
-				errors = SparseImage::HDIUTIL::remove_OSX_fuzz(vm, mounted_name)
+				errors = SparseImage::HDIUTIL::remove_OSX_fuzz(vm, opts.mounted_name)
 				if errors.length > 0
 					errors.each do |error| vm.ui.info(error) end
 				end
 
 				vm.config.vm.synced_folders[opts.volume_name] = {
-					:hostpath => mounted_name,
+					:hostpath => opts.mounted_name,
 					:guestpath => opts.vm_mountpoint,
 					:nfs => true,
 				}
@@ -82,9 +81,8 @@ module SparseImage
 		def unmount(vm)
 			# Unmount each configured sparse image
 			vm.config.sparseimage.to_hash[:images].each do |opts|
-				mounted_name = "#{opts.mounted_folder}/#{opts.volume_name}".downcase
 				if opts.auto_unmount
-					SparseImage::HDIUTIL::unmount(vm, mounted_name)
+					SparseImage::HDIUTIL::unmount(vm, opts.mounted_name)
 				end
 			end
 		end
@@ -94,7 +92,6 @@ module SparseImage
 			vm.config.sparseimage.to_hash[:images].each do |opts|
 				cancel = false
 				full_image_filename = "#{opts.image_folder}/#{opts.volume_name}.#{opts.image_type}".downcase
-				mounted_name = "#{opts.mounted_folder}/#{opts.volume_name}".downcase
 				# Confirm destruction of the sparse image
 				while cancel == false
 					choice = vm.ui.ask("Do you want to delete the sparse image at #{full_image_filename}? [Y/N] ")
@@ -102,7 +99,7 @@ module SparseImage
 						choice = vm.ui.ask("Confirm the name of the volume to destroy [#{ opts.volume_name}] ")
 						if choice == opts.volume_name
 							# TODO - Test first whether it's mounted before tryingto unmount
-							SparseImage::HDIUTIL::unmount(vm, mounted_name)
+							SparseImage::HDIUTIL::unmount(vm, opts.mounted_name)
 							SparseImage::HDIUTIL::destroy(vm, full_image_filename)
 							cancel = true
 						else
@@ -121,7 +118,8 @@ module SparseImage
 		# Configuration for a single sparse image
 		# Not exposed to vagrant.
 
-		attr_accessor :vm_mountpoint, :image_size, :image_fs, :image_type, :volume_name, :image_folder, :auto_unmount, :mounted_folder
+		attr_accessor :vm_mountpoint, :image_size, :image_fs, :image_type, :volume_name, :image_folder,
+						:auto_unmount, :mounted_name
 		
 		@@required = [
 			:volume_name,
@@ -129,7 +127,8 @@ module SparseImage
 			:image_fs,
 			:vm_mountpoint,
 			:image_size,
-			:image_folder]
+			:image_folder
+		]
 
 		@@valid_image_types = ["SPARSEIMAGE", "SPARSEBUNDLE"]
 
@@ -158,8 +157,8 @@ module SparseImage
 			if @auto_unmount.nil?
 				@auto_unmount = true
 			end
-			if @mounted_folder.nil?
-				@mounted_folder = @image_folder
+			if @mounted_name.nil?
+				@mounted_name = "./#{@volume_name}"
 			end
 		end
 
@@ -171,7 +170,7 @@ module SparseImage
 				:volume_name	=> @volume_name,
 				:auto_unmount	=> @auto_unmount,
 				:image_folder	=> @image_folder,
-				:mounted_folder => @mounted_folder
+				:mounted_name	=> @mounted_name
 			}
 		end
 	end
