@@ -16,6 +16,9 @@ module SparseImage
 				@subcommands.register(:destroy) do
 					Destroy
 				end
+				@subcommands.register(:list) do
+					List
+				end
 			end
 
 			def execute
@@ -56,12 +59,28 @@ module SparseImage
 			end
 		end
 
+		class List < Vagrant.plugin("2", :command)
+			def execute
+				@env.machine_names.each do |mname|
+					machine = @env.machine(mname, :virtualbox)
+					machine.ui.info("Listing sparse images for machine #{mname}")
+					SparseImage::list(machine)
+				end
+			end
+			def help
+				@env.ui.info("Usage: vagrant sparseimage mount")
+				@env.ui.info("\tMount all configured sparse images")
+			end
+		end
+
+
+
 		class Mount < Vagrant.plugin("2", :command)
 			def execute
 				@env.machine_names.each do |mname|
-					machine.ui.info("Mounting sparse images for machine #{mname}")
 					machine = @env.machine(mname, :virtualbox)
-					SparseImage::Mount.new(nil, @env).call(nil, machine)
+					machine.ui.info("Mounting sparse images for machine #{mname}")
+					SparseImage::mount(machine)
 				end
 			end
 			def help
@@ -73,9 +92,9 @@ module SparseImage
 		class Unmount < Vagrant.plugin("2", :command)
 			def execute
 				@env.machine_names.each do |mname|
-					machine.ui.info("Unmounting sparse images for machine #{mname}")
 					machine = @env.machine(mname, :virtualbox)
-					SparseImage::Unmount.new(nil, @env).call(nil, machine)
+					machine.ui.info("Unmounting sparse images for machine #{mname}")
+					SparseImage::unmount(machine)
 				end
 			end
 			def help
@@ -87,9 +106,9 @@ module SparseImage
 		class Destroy < Vagrant.plugin("2", :command)
 			def execute
 				@env.machine_names.each do |mname|
-					machine.ui.info("Destroying sparse images for machine #{mname}")
 					machine = @env.machine(mname, :virtualbox)
-					SparseImage::Destroy.new(nil, @env).call(nil, machine)
+					machine.ui.info("Destroying sparse images for machine #{mname}")
+					SparseImage::destroy(machine)
 				end
 			end
 			def help

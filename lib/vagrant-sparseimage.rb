@@ -7,6 +7,7 @@ rescue NameError
 		require 'fileutils'
 	end
 end
+
 require 'pp'
 require 'optparse'
 
@@ -18,6 +19,7 @@ end
 require Vagrant.source_root.join("plugins/commands/up/start_mixins")
 
 require File.expand_path("../vagrant-sparseimage/command", __FILE__)
+require File.expand_path("../vagrant-sparseimage/hdiutil", __FILE__)
 
 module SparseImage
 	VERSION = "0.2.3"
@@ -30,7 +32,13 @@ module SparseImage
 			return $?
 		end
 
-		def mount_helper(vm)
+		def list(vm)
+			vm.config.sparseimage.to_hash[:images].each do |opts|
+				pp opts.to_hash
+			end
+		end
+
+		def mount(vm)
 			# mount each configured sparse image
 			vm.config.sparseimage.to_hash[:images].each do |opts|
 				# Derive the full image filename and volume mount path (for the host)
@@ -47,42 +55,42 @@ module SparseImage
 					# hdiutil is finnicky with image type
 					type = opts.image_type == 'SPARSEIMAGE' ? 'SPARSE' : opts.image_type
 					vm.ui.info "Creating #{opts.image_size}MB sparse disk image: #{full_image_filename}"
-					system("hdiutil create -type '#{type}' " +
-						   "-size '#{opts.image_size}m' " +
-						   "-fs '#{opts.image_fs}' " +
-						   "-volname '#{opts.volume_name}' " +
-						   "'#{full_image_filename}'")
+					# TODO - move this into SparseImage::HDIUTIL::create
+					# TODO - raise an exception if create fails
+					SparseImage::HDIUTIL::create(vm, type, opts.image_size, opts.image_fs, opts.volume_name, full_image_filename)
+					vm.ui.info("Created disk image in the host: #{full_image_filename}")
 				end
 
 				# Mount the image in the host
-				vm.ui.info("Mounting disk image in the host: #{full_image_filename} at #{opts.mounted_folder}")
-				SparseImage::mount(vm, opts.mounted_folder, full_image_filename)
+				SparseImage::HDIUTIL::mount(vm, opts.mounted_folder, full_image_filename)
+				vm.ui.info("Mounted disk image in the host: #{full_image_filename} at #{opts.mounted_folder}")
 
 				# Remove nonsense hidden files
-				errors = SparseImage::remove_OSX_fuzz(vm, mounted_name)
+				errors = SparseImage::HDIUTIL::remove_OSX_fuzz(vm, mounted_name)
 				if errors.length > 0
 					errors.each do |error| vm.ui.info(error) end
 				end
 
-				vm.synced_folders[opts.volume_name] = {
+				vm.config.vm.synced_folders[opts.volume_name] = {
 					:hostpath => mounted_name,
 					:guestpath => opts.vm_mountpoint,
 					:nfs => true,
 				}
+				vm.ui.info("Mounted disk image in the guest: #{full_image_filename} at #{opts.vm_mountpoint}")
 			end
 		end
 
-		def unmount_helper(vm)
+		def unmount(vm)
 			# Unmount each configured sparse image
 			vm.config.sparseimage.to_hash[:images].each do |opts|
 				mounted_name = "#{opts.mounted_folder}/#{opts.volume_name}".downcase
 				if opts.auto_unmount
-					SparseImage::unmount(vm, mounted_name)
+					SparseImage::HDIUTIL::unmount(vm, mounted_name)
 				end
 			end
 		end
 
-		def destroy_helper(vm)
+		def destroy(vm)
 			# Prompt to destroy each configured sparse image
 			vm.config.sparseimage.to_hash[:images].each do |opts|
 				cancel = false
@@ -94,57 +102,19 @@ module SparseImage
 					if choice.upcase == 'Y'
 						choice = vm.ui.ask("Confirm the name of the volume to destroy [#{ opts.volume_name}] ")
 						if choice == opts.volume_name
-							SparseImage::unmount(vm, mounted_name)
-							SparseImage::destroy(vm, full_image_filename)
+							# TODO - Test first whether it's mounted before tryingto unmount
+							SparseImage::HDIUTIL::unmount(vm, mounted_name)
+							SparseImage::HDIUTIL::destroy(vm, full_image_filename)
+							cancel = true
+						else
+							vm.ui.error("name does not match.")
 						end
 					else
 						cancel = true
+						vm.ui.error("Image '#{opts.volume_name}' was not destroyed.")
 					end
 				end
 			end
-		end
-
-		# Try to mount the image. If it fails, return a warning (as a string)
-		def mount(vm, mount_in, image_path)
-			if not run("sudo hdiutil attach -mountroot '#{mount_in}' '#{image_path}'").success?
-				vm.ui.error("WARNING: Failed to mount #{image_path} at #{mount_in}")
-			end
-		end
-
-		# Unmount the image
-		def unmount(vm, mounted_in)
-			vm.ui.info("Unmounting disk image from host: #{mounted_in}")
-			if not run("sudo hdiutil detach -quiet '#{mounted_in}'").success?
-				vm.ui.error("WARNING: Failed to unmount #{mounted_in}. It may not have been mounted.")
-			end
-		end
-
-		# Delete the image
-		def destroy(vm, image_filename)
-			vm.ui.info("Destroying disk image at #{image_filename}")
-			if File.exists?(image_filename)
-				if File.directory?(image_filename)
-					FileUtils.rm_rf(image_filename)
-				else
-					File.delete(image_filename)
-				end
-			end
-		end
-
-		# Remove all the nonsense that comes with a mounted volume in OSX
-		def remove_OSX_fuzz(vm, mounted_dir)
-			# Append trailing slash if it's missing from the mounted dir
-			mounted_dir = "#{mounted_dir}/" unless mounted_dir[-1] == '/'
-			errors = []
-			['.Trashes', '.fseventsd', '.Spotlight-V*'].each do |rubbish|
-				path = "#{mounted_dir}#{rubbish}"
-				p = run("sudo rm -rf #{path}")
-				vm.ui.info("Removing #{path}")
-				if not p.success?
-					vm.ui.error("Failed to remove #{rubbish} from #{mounted_dir}")
-				end
-			end
-			return errors
 		end
 	end
 
@@ -169,7 +139,6 @@ module SparseImage
 			# Check for the required config keys
 			@@required.each do |key|
 				if not to_hash[key] or (to_hash[key].is_a? String  and to_hash[key].length == 0)
-					puts to_hash
 					errors.push "#{key} must be present."
 				end
 			end
@@ -219,7 +188,7 @@ module SparseImage
 
 		def call(env)
 			vm = env[:machine]
-			SparseImage::mount_helper(vm)
+			SparseImage::mount(vm)
 			@app.call(env)
 		end
 	end
@@ -234,7 +203,7 @@ module SparseImage
 		end
 		def call(env)
 			vm = env[:machine]
-			SparseImage::mount_helper(vm)
+			SparseImage::mount(vm)
 			@app.call(env)
 		end
 	end
@@ -244,7 +213,12 @@ module SparseImage
 		# Unmount the shared drive from the host machine
 		# Fails silently if the drive was not mounted
 		def initialize(app, env)
-			SparseImage::unmount_helper(vm)
+			@app = app
+			@env = env
+		end
+		def call(env)
+			vm = env[:machine]
+			SparseImage::unmount(vm)
 			@app.call(env)
 		end
 	end
@@ -259,7 +233,7 @@ module SparseImage
 		end
 		def call(env)
 			vm = env[:machine]
-			destroy_helper(vm)
+			destroy(vm)
 			@app.call(env)
 		end
 	end
