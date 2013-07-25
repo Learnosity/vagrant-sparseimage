@@ -3,7 +3,7 @@ module SparseImage
 		class << self
 			# Try to mount the image. If it fails, return a warning (as a string)
 			def mount(vm, mount_in, image_path)
-				if not SparseImage::run("sudo hdiutil attach -mountroot '#{mount_in}' '#{image_path}'").success?
+				if not SparseImage::run("hdiutil attach -mountpoint '#{mount_in}' '#{image_path}'").success?
 					vm.ui.error("WARNING: Failed to mount #{image_path} at #{mount_in}")
 				end
 			end
@@ -11,7 +11,7 @@ module SparseImage
 			# Unmount the image
 			def unmount(vm, mounted_in)
 				vm.ui.info("Unmounting disk image from host: #{mounted_in}")
-				if not SparseImage::run("sudo hdiutil detach -quiet '#{mounted_in}'").success?
+				if not SparseImage::run("hdiutil detach -quiet '#{mounted_in}'").success?
 					vm.ui.error("WARNING: Failed to unmount #{mounted_in}. It may not have been mounted.")
 				end
 			end
@@ -46,7 +46,7 @@ module SparseImage
 				errors = []
 				['.Trashes', '.fseventsd', '.Spotlight-V*'].each do |rubbish|
 					path = "#{mounted_dir}#{rubbish}"
-					p = SparseImage::run("sudo rm -rf #{path}")
+					p = SparseImage::run("rm -rf #{path}")
 					vm.ui.info("Removing #{path}")
 					if not p.success?
 						vm.ui.error("Failed to remove #{rubbish} from #{mounted_dir}")

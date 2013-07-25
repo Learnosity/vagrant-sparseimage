@@ -1,5 +1,5 @@
 $:.unshift File.expand_path("../lib", __FILE__)
-require 'vagrant-sparseimage.rb'
+require 'version.rb'
 
 Gem::Specification.new do |s|
 	s.name			= 'vagrant-sparseimage'

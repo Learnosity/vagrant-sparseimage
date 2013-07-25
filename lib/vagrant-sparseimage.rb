@@ -12,9 +12,9 @@ require 'pp'
 require 'optparse'
 
 begin
-	require 'vagrant'
+    require 'vagrant'
 rescue LoadError
-	raise 'The Vagrant SparseImage plugin must be run within Vagrant.'
+    raise 'The Vagrant SparseImage plugin must be run within Vagrant.'
 end
 require Vagrant.source_root.join("plugins/commands/up/start_mixins")
 
@@ -22,7 +22,6 @@ require File.expand_path("../vagrant-sparseimage/command", __FILE__)
 require File.expand_path("../vagrant-sparseimage/hdiutil", __FILE__)
 
 module SparseImage
-	VERSION = "0.2.3"
 
 	class << self
 		# Run the command, wait for exit and return the Process object.
