@@ -69,12 +69,14 @@ module SparseImage
 					errors.each do |error| vm.ui.info(error) end
 				end
 
-				vm.config.vm.synced_folders[opts.volume_name] = {
-					:hostpath => opts.mounted_name,
-					:guestpath => opts.vm_mountpoint,
-					:nfs => true,
-				}
-				vm.ui.info("Mounted disk image in the guest: #{full_image_filename} at #{opts.vm_mountpoint}")
+				if opts.vm_mountpoint
+					vm.config.vm.synced_folders[opts.volume_name] = {
+						:hostpath => opts.mounted_name,
+						:guestpath => opts.vm_mountpoint,
+						:disabled => false,
+					}
+					vm.ui.info("Mounted disk image in the guest: #{full_image_filename} at #{opts.vm_mountpoint}")
+				end
 			end
 		end
 
@@ -120,12 +122,11 @@ module SparseImage
 
 		attr_accessor :vm_mountpoint, :image_size, :image_fs, :image_type, :volume_name, :image_folder,
 						:auto_unmount, :mounted_name
-		
+
 		@@required = [
 			:volume_name,
 			:image_type,
 			:image_fs,
-			:vm_mountpoint,
 			:image_size,
 			:image_folder
 		]
@@ -293,7 +294,7 @@ module SparseImage
 		end
 
 		action_hook(self::ALL_ACTIONS) do |hook|
-			hook.after(VagrantPlugins::ProviderVirtualBox::Action::ForwardPorts, Mount)
+			hook.before(Vagrant::Action::Builtin::SyncedFolders, Mount)
 			hook.after(Vagrant::Action::Builtin::GracefulHalt, Unmount)
 			hook.after(Vagrant::Action::Builtin::DestroyConfirm, Destroy)
 		end

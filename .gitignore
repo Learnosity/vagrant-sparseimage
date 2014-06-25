@@ -1,3 +1,6 @@
 Gemfile.lock
 pkg/
 *.gem
+
+/example_box
+!/example_box/Vagrantfile
