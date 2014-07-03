@@ -96,7 +96,7 @@ module SparseImage
 				full_image_filename = "#{opts.image_folder}/#{opts.volume_name}.#{opts.image_type}".downcase
 				# Confirm destruction of the sparse image
 				while cancel == false
-					choice = vm.ui.ask("Do you want to delete the sparse image at #{full_image_filename}? [Y/N] ")
+					choice = vm.ui.ask("Do you want to delete the sparse image at #{full_image_filename}? [y/N] ")
 					if choice.upcase == 'Y'
 						choice = vm.ui.ask("Confirm the name of the volume to destroy [#{ opts.volume_name}] ")
 						if choice == opts.volume_name
