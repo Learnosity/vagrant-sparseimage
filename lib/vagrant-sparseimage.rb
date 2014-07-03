@@ -69,12 +69,14 @@ module SparseImage
 					errors.each do |error| vm.ui.info(error) end
 				end
 
-				vm.config.vm.synced_folders[opts.volume_name] = {
-					:hostpath => opts.mounted_name,
-					:guestpath => opts.vm_mountpoint,
-					:nfs => true,
-				}
-				vm.ui.info("Mounted disk image in the guest: #{full_image_filename} at #{opts.vm_mountpoint}")
+				if opts.vm_mountpoint
+					vm.config.vm.synced_folders[opts.volume_name] = {
+						:hostpath => opts.mounted_name,
+						:guestpath => opts.vm_mountpoint,
+						:disabled => false,
+					}
+					vm.ui.info("Mounted disk image in the guest: #{full_image_filename} at #{opts.vm_mountpoint}")
+				end
 			end
 		end
 
@@ -94,7 +96,7 @@ module SparseImage
 				full_image_filename = "#{opts.image_folder}/#{opts.volume_name}.#{opts.image_type}".downcase
 				# Confirm destruction of the sparse image
 				while cancel == false
-					choice = vm.ui.ask("Do you want to delete the sparse image at #{full_image_filename}? [Y/N] ")
+					choice = vm.ui.ask("Do you want to delete the sparse image at #{full_image_filename}? [y/N] ")
 					if choice.upcase == 'Y'
 						choice = vm.ui.ask("Confirm the name of the volume to destroy [#{ opts.volume_name}] ")
 						if choice == opts.volume_name
@@ -120,12 +122,11 @@ module SparseImage
 
 		attr_accessor :vm_mountpoint, :image_size, :image_fs, :image_type, :volume_name, :image_folder,
 						:auto_unmount, :mounted_name
-		
+
 		@@required = [
 			:volume_name,
 			:image_type,
 			:image_fs,
-			:vm_mountpoint,
 			:image_size,
 			:image_folder
 		]
@@ -293,7 +294,7 @@ module SparseImage
 		end
 
 		action_hook(self::ALL_ACTIONS) do |hook|
-			hook.after(VagrantPlugins::ProviderVirtualBox::Action::ForwardPorts, Mount)
+			hook.before(Vagrant::Action::Builtin::SyncedFolders, Mount)
 			hook.after(Vagrant::Action::Builtin::GracefulHalt, Unmount)
 			hook.after(Vagrant::Action::Builtin::DestroyConfirm, Destroy)
 		end
