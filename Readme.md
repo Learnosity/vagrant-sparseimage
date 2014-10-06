@@ -1,4 +1,5 @@
 # vagrant-sparseimage
+[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/Learnosity/vagrant-sparseimage?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 `vagrant-sparseimage` is a [Vagrant](http://vagrantup.com) plugin which automatically creates and mounts a sparseimage for the guest system to share. This allows alternative filesystems to be used between the host and the guest (eg. journaled, case sensitive).
 
